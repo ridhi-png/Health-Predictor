@@ -1,0 +1,189 @@
+{% extends 'health_predictor/base.html' %}
+
+{% block title %}Share Report: {{ report.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2>
+                    <i class="fas fa-share-alt me-2"></i>Share Health Report
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5>Report Information</h5>
+                    <table class="table">
+                        <tr>
+                            <th>Title:</th>
+                            <td>{{ report.title }}</td>
+                        </tr>
+                        <tr>
+                            <th>Patient:</th>
+                            <td>{{ report.patient.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Created:</th>
+                            <td>{{ report.created_at|date:"F j, Y" }}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Share via Email -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-envelope me-2"></i>Share via Email
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'health_predictor:report_share_email' pk=report.id %}" novalidate>
+                            {% csrf_token %}
+                            
+                            {% if email_form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in email_form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="form-group mb-3">
+                                <label for="{{ email_form.recipient_email.id_for_label }}" class="form-label">Recipient Email*</label>
+                                {{ email_form.recipient_email }}
+                                {% if email_form.recipient_email.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in email_form.recipient_email.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label for="{{ email_form.subject.id_for_label }}" class="form-label">Subject</label>
+                                {{ email_form.subject }}
+                                {% if email_form.subject.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in email_form.subject.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label for="{{ email_form.message.id_for_label }}" class="form-label">Message</label>
+                                {{ email_form.message }}
+                                {% if email_form.message.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in email_form.message.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                {{ email_form.include_pdf }}
+                                <label class="form-check-label" for="{{ email_form.include_pdf.id_for_label }}">
+                                    Attach PDF version of the report
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Send Email
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Share via Link -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-link me-2"></i>Share via Link
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if share_link %}
+                            <div class="alert alert-success">
+                                <p>Your report is now shared with the following link:</p>
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control" id="share-link" value="{{ share_link }}" readonly>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="copyShareLink()">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                <p class="mb-0"><small>This link will expire in 7 days.</small></p>
+                            </div>
+                            
+                            <form method="post" action="{% url 'health_predictor:report_revoke_share' pk=report.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-ban me-2"></i>Revoke Access
+                                </button>
+                            </form>
+                        {% else %}
+                            <p>Generate a shareable link that allows anyone with the link to view this report.</p>
+                            <form method="post" action="{% url 'health_predictor:report_generate_link' pk=report.id %}">
+                                {% csrf_token %}
+                                <div class="form-group mb-3">
+                                    <label for="expiration" class="form-label">Link Expiration</label>
+                                    <select name="expiration" id="expiration" class="form-select">
+                                        <option value="1">1 day</option>
+                                        <option value="7" selected>7 days</option>
+                                        <option value="30">30 days</option>
+                                        <option value="0">Never (not recommended)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-link me-2"></i>Generate Link
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Back Button -->
+                <div class="d-flex justify-content-start">
+                    <a href="{% url 'health_predictor:report_detail' pk=report.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add Bootstrap form classes to all form inputs
+    document.addEventListener('DOMContentLoaded', function() {
+        const formControls = document.querySelectorAll('input:not([type="checkbox"]), select, textarea');
+        formControls.forEach(function(element) {
+            element.classList.add('form-control');
+        });
+        
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(function(element) {
+            element.classList.add('form-check-input');
+        });
+    });
+    
+    // Function to copy share link to clipboard
+    function copyShareLink() {
+        const shareLink = document.getElementById('share-link');
+        shareLink.select();
+        document.execCommand('copy');
+        
+        // Show a temporary tooltip or message
+        const button = shareLink.nextElementSibling;
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(function() {
+            button.innerHTML = originalHTML;
+        }, 2000);
+    }
+</script>
+{% endblock %}

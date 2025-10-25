@@ -1,0 +1,163 @@
+{% extends 'health_predictor/base.html' %}
+
+{% block title %}Symptom Checker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i class="fas fa-stethoscope me-2"></i>Symptom Checker
+                    {% if patient %}
+                        <span class="text-muted fs-5">for {{ patient.name }}</span>
+                    {% endif %}
+                </h2>
+            </div>
+            <div class="card-body">
+                <p class="lead">Select the symptoms you're experiencing to get potential health conditions and natural remedy suggestions.</p>
+                
+                <!-- Search Form -->
+                <div class="mb-4">
+                    <h5>Search for Symptoms</h5>
+                    <form id="symptom-search-form" class="row g-3">
+                        <div class="col-md-6">
+                            <label for="keyword" class="form-label">Keyword</label>
+                            <input type="text" class="form-control" id="keyword" name="keyword" placeholder="Enter symptom keyword...">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="body_part" class="form-label">Body Part</label>
+                            <select class="form-select" id="body_part" name="body_part">
+                                <option value="">All Body Parts</option>
+                                {% for choice in search_form.body_part.field.choices %}
+                                    {% if choice.0 %}
+                                        <option value="{{ choice.0 }}">{{ choice.1 }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Search Results -->
+                <div id="search-results" class="mb-4" style="display: none;">
+                    <h5>Search Results</h5>
+                    <div class="list-group" id="symptom-results">
+                        <!-- Results will be populated here via JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Symptom Selection Form -->
+                <form method="post" action="{% if patient %}{% url 'health_predictor:symptom_checker' patient_id=patient.id %}{% else %}{% url 'health_predictor:symptom_checker' %}{% endif %}">
+                    {% csrf_token %}
+                    
+                    <div class="accordion" id="symptomsAccordion">
+                        <!-- Group symptoms by body part -->
+                        {% regroup symptom_form.fields.items by field.label.field_name|slice:"8:" as symptom_groups %}
+                        
+                        {% for group in symptom_groups %}
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}">
+                                        {{ group.grouper|default:"General Symptoms" }}
+                                    </button>
+                                </h2>
+                                <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#symptomsAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            {% for field_name, field in group.list %}
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="{{ field_name }}" id="id_{{ field_name }}" {% if field.value %}checked{% endif %}>
+                                                        <label class="form-check-label" for="id_{{ field_name }}">
+                                                            {{ field.label }}
+                                                            <i class="fas fa-info-circle text-muted" data-bs-toggle="tooltip" title="{{ field.help_text }}"></i>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>No symptoms available. Please add symptoms through the admin interface.
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-arrow-right me-2"></i>Continue to Severity Assessment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Symptom search functionality
+    $(document).ready(function() {
+        $('#symptom-search-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            var keyword = $('#keyword').val();
+            var bodyPart = $('#body_part').val();
+            
+            $.ajax({
+                url: '{% url "health_predictor:api_symptom_search" %}',
+                data: {
+                    'keyword': keyword,
+                    'body_part': bodyPart
+                },
+                dataType: 'json',
+                success: function(data) {
+                    // Clear previous results
+                    $('#symptom-results').empty();
+                    
+                    // Show results container
+                    $('#search-results').show();
+                    
+                    if (data.symptoms.length > 0) {
+                        // Add each symptom to the results
+                        $.each(data.symptoms, function(index, symptom) {
+                            var resultItem = $('<a href="#" class="list-group-item list-group-item-action"></a>');
+                            resultItem.html(
+                                '<div class="d-flex w-100 justify-content-between">' +
+                                '<h6 class="mb-1">' + symptom.name + '</h6>' +
+                                '<small>' + symptom.body_part + '</small>' +
+                                '</div>' +
+                                '<p class="mb-1">' + symptom.description + '</p>' +
+                                '<div class="form-check">' +
+                                '<input class="form-check-input" type="checkbox" id="symptom_' + symptom.id + '" name="symptom_' + symptom.id + '">' +
+                                '<label class="form-check-label" for="symptom_' + symptom.id + '">Select this symptom</label>' +
+                                '</div>'
+                            );
+                            
+                            $('#symptom-results').append(resultItem);
+                        });
+                    } else {
+                        $('#symptom-results').html('<div class="alert alert-info">No symptoms found matching your search criteria.</div>');
+                    }
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

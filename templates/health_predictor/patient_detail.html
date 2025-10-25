@@ -1,0 +1,167 @@
+{% extends 'health_predictor/base.html' %}
+
+{% block title %}{{ patient.name }} - Patient Details{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Patient Information Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-user me-2"></i>{{ patient.name }}
+                </h2>
+                <div>
+                    <a href="{% url 'health_predictor:patient_update' pk=patient.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-edit me-2"></i>Edit
+                    </a>
+                    <a href="{% url 'health_predictor:symptom_checker' patient_id=patient.id %}" class="btn btn-primary">
+                        <i class="fas fa-stethoscope me-2"></i>Check Symptoms
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Personal Information</h5>
+                        <table class="table">
+                            <tr>
+                                <th>Age:</th>
+                                <td>{{ patient.age }}</td>
+                            </tr>
+                            <tr>
+                                <th>Gender:</th>
+                                <td>{{ patient.get_gender_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>Email:</th>
+                                <td>
+                                    {% if patient.email %}
+                                        <a href="mailto:{{ patient.email }}">{{ patient.email }}</a>
+                                    {% else %}
+                                        <span class="text-muted">Not provided</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Phone:</th>
+                                <td>
+                                    {% if patient.phone %}
+                                        {{ patient.phone }}
+                                    {% else %}
+                                        <span class="text-muted">Not provided</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Address:</th>
+                                <td>
+                                    {% if patient.address %}
+                                        {{ patient.address }}
+                                    {% else %}
+                                        <span class="text-muted">Not provided</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Medical History</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                {% if patient.medical_history %}
+                                    <p>{{ patient.medical_history|linebreaks }}</p>
+                                {% else %}
+                                    <p class="text-muted">No medical history provided.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Health Reports Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">
+                    <i class="fas fa-file-medical me-2"></i>Health Reports
+                </h3>
+                <a href="{% url 'health_predictor:symptom_checker' patient_id=patient.id %}" class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>New Report
+                </a>
+            </div>
+            <div class="card-body">
+                {% if reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Title</th>
+                                    <th>Symptoms</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in reports %}
+                                    <tr>
+                                        <td>{{ report.created_at|date:"Y-m-d" }}</td>
+                                        <td>
+                                            <a href="{% url 'health_predictor:report_detail' pk=report.id %}" class="text-decoration-none">
+                                                {{ report.title }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info rounded-pill">
+                                                {{ report.symptoms.count }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if report.status == 'DRAFT' %}
+                                                <span class="badge bg-warning text-dark">Draft</span>
+                                            {% elif report.status == 'COMPLETED' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif report.status == 'SHARED' %}
+                                                <span class="badge bg-primary">Shared</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'health_predictor:report_detail' pk=report.id %}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'health_predictor:report_update' pk=report.id %}" class="btn btn-outline-secondary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'health_predictor:report_share' pk=report.id %}" class="btn btn-outline-info">
+                                                    <i class="fas fa-share-alt"></i>
+                                                </a>
+                                                <a href="{% url 'health_predictor:report_export' pk=report.id format='pdf' %}" class="btn btn-outline-danger">
+                                                    <i class="fas fa-file-pdf"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>No health reports found for this patient. Click the "New Report" button to create one.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Back Button -->
+        <div class="d-flex justify-content-start mb-4">
+            <a href="{% url 'health_predictor:patient_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Patients
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

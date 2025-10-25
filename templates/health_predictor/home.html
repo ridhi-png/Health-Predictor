@@ -1,0 +1,112 @@
+{% extends 'health_predictor/base.html' %}
+
+{% block title %}Health Predictor - Home{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Hero Section -->
+        <div class="card mb-5">
+            <div class="card-body text-center py-5" style="background-color: #F1F8E9;">
+                <h1 class="display-4 mb-4">Welcome to Health Predictor</h1>
+                <p class="lead mb-4">Your natural health assistant that predicts potential health conditions based on your symptoms and suggests natural remedies and yoga practices.</p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="{% url 'health_predictor:symptom_checker' %}" class="btn btn-primary btn-lg px-4 me-md-2">
+                        <i class="fas fa-stethoscope me-2"></i>Check Your Symptoms
+                    </a>
+                    <a href="{% url 'health_predictor:patient_create' %}" class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="fas fa-user-plus me-2"></i>Register as Patient
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <h2 class="text-center mb-4">How It Works</h2>
+        <div class="row mb-5">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 symptom-card">
+                    <div class="card-body text-center">
+                        <div class="remedy-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <h5 class="card-title">Describe Your Symptoms</h5>
+                        <p class="card-text">Select from our comprehensive list of symptoms or search for specific ones. Rate their severity to help us better understand your condition.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 symptom-card">
+                    <div class="card-body text-center">
+                        <div class="remedy-icon">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <h5 class="card-title">Get Potential Conditions</h5>
+                        <p class="card-text">Our system analyzes your symptoms and provides potential health conditions that may be causing them, along with detailed information.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 symptom-card">
+                    <div class="card-body text-center">
+                        <div class="remedy-icon">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <h5 class="card-title">Natural Remedies & Yoga</h5>
+                        <p class="card-text">Receive personalized recommendations for natural remedies, yoga practices, and lifestyle changes that may help alleviate your symptoms.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benefits Section -->
+        <div class="row mb-5">
+            <div class="col-lg-6">
+                <h2 class="mb-4">Benefits of Natural Health</h2>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>Holistic Approach:</strong> Treats the whole person, not just symptoms
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>Fewer Side Effects:</strong> Natural remedies often have fewer adverse effects
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>Preventative Care:</strong> Focus on preventing illness before it occurs
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>Personalized Treatment:</strong> Tailored to your specific needs and conditions
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>Complementary Care:</strong> Can work alongside conventional treatments
+                    </li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Important Disclaimer</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Health Predictor is designed to provide general information and suggestions based on symptoms. It is not intended to replace professional medical advice, diagnosis, or treatment.</p>
+                        <p>Always consult with a qualified healthcare provider before starting any new treatment or if you have questions regarding a medical condition.</p>
+                        <p>If you are experiencing severe symptoms or a medical emergency, please seek immediate medical attention.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="text-center mb-5">
+            <h2 class="mb-4">Ready to Start Your Natural Health Journey?</h2>
+            <a href="{% url 'health_predictor:symptom_checker' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-stethoscope me-2"></i>Check Your Symptoms Now
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

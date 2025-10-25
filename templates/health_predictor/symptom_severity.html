@@ -1,0 +1,96 @@
+{% extends 'health_predictor/base.html' %}
+
+{% block title %}Symptom Severity Assessment{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i class="fas fa-sliders-h me-2"></i>Symptom Severity Assessment
+                    {% if patient %}
+                        <span class="text-muted fs-5">for {{ patient.name }}</span>
+                    {% endif %}
+                </h2>
+            </div>
+            <div class="card-body">
+                <p class="lead">Please rate the severity of each symptom and how long you've been experiencing it.</p>
+                
+                <form method="post" action="{% if patient %}{% url 'health_predictor:symptom_severity' patient_id=patient.id %}{% else %}{% url 'health_predictor:symptom_severity' %}{% endif %}">
+                    {% csrf_token %}
+                    
+                    {% for symptom in symptoms %}
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">{{ symptom.name }}</h5>
+                                <small class="text-muted">{{ symptom.description }}</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <label for="id_severity_{{ symptom.id }}" class="form-label">
+                                            How severe is your {{ symptom.name|lower }}?
+                                        </label>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">Mild</span>
+                                            <input type="range" class="form-range flex-grow-1" 
+                                                   id="id_severity_{{ symptom.id }}" 
+                                                   name="severity_{{ symptom.id }}" 
+                                                   min="1" max="10" value="5">
+                                            <span class="ms-2">Severe</span>
+                                        </div>
+                                        <div class="text-center mt-1">
+                                            <span id="severity_value_{{ symptom.id }}">5</span>/10
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <label for="id_duration_{{ symptom.id }}" class="form-label">
+                                            How long have you had {{ symptom.name|lower }}?
+                                        </label>
+                                        <select class="form-select" id="id_duration_{{ symptom.id }}" name="duration_{{ symptom.id }}">
+                                            <option value="hours">Hours</option>
+                                            <option value="days" selected>Days</option>
+                                            <option value="weeks">Weeks</option>
+                                            <option value="months">Months</option>
+                                            <option value="years">Years</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% if patient %}{% url 'health_predictor:symptom_checker' patient_id=patient.id %}{% else %}{% url 'health_predictor:symptom_checker' %}{% endif %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Symptoms
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-arrow-right me-2"></i>Get Results
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update severity value display when slider changes
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for symptom in symptoms %}
+            var slider{{ symptom.id }} = document.getElementById('id_severity_{{ symptom.id }}');
+            var output{{ symptom.id }} = document.getElementById('severity_value_{{ symptom.id }}');
+            
+            slider{{ symptom.id }}.oninput = function() {
+                output{{ symptom.id }}.innerHTML = this.value;
+            }
+        {% endfor %}
+    });
+</script>
+{% endblock %}

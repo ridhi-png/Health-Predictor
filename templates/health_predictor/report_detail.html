@@ -1,0 +1,249 @@
+{% extends 'health_predictor/base.html' %}
+
+{% block title %}Health Report: {{ report.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Report Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-file-medical me-2"></i>Health Report
+            </h1>
+            <div class="btn-group">
+                <a href="{% url 'health_predictor:report_share' pk=report.id %}" class="btn btn-outline-primary">
+                    <i class="fas fa-share-alt me-2"></i>Share
+                </a>
+                <a href="{% url 'health_predictor:report_export' pk=report.id format='pdf' %}" class="btn btn-outline-danger">
+                    <i class="fas fa-file-pdf me-2"></i>Export PDF
+                </a>
+                <a href="{% url 'health_predictor:report_export' pk=report.id format='csv' %}" class="btn btn-outline-success">
+                    <i class="fas fa-file-csv me-2"></i>Export CSV
+                </a>
+            </div>
+        </div>
+        
+        <!-- Report Info Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">{{ report.title }}</h2>
+                <span class="badge {% if report.status == 'DRAFT' %}bg-warning text-dark{% elif report.status == 'COMPLETED' %}bg-success{% elif report.status == 'SHARED' %}bg-primary{% endif %}">
+                    {{ report.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h5>Patient Information</h5>
+                        <table class="table">
+                            <tr>
+                                <th>Name:</th>
+                                <td>
+                                    <a href="{% url 'health_predictor:patient_detail' pk=report.patient.id %}" class="text-decoration-none">
+                                        {{ report.patient.name }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Age:</th>
+                                <td>{{ report.patient.age }}</td>
+                            </tr>
+                            <tr>
+                                <th>Gender:</th>
+                                <td>{{ report.patient.get_gender_display }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Report Details</h5>
+                        <table class="table">
+                            <tr>
+                                <th>Created:</th>
+                                <td>{{ report.created_at|date:"F j, Y, g:i a" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Last Updated:</th>
+                                <td>{{ report.updated_at|date:"F j, Y, g:i a" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Report ID:</th>
+                                <td><code>{{ report.id }}</code></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if report.notes %}
+                <div class="mb-3">
+                    <h5>Notes</h5>
+                    <div class="card">
+                        <div class="card-body bg-light">
+                            {{ report.notes|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Symptoms Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>Reported Symptoms
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if report.symptoms.all %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Symptom</th>
+                                    <th>Body Part</th>
+                                    <th>Severity</th>
+                                    <th>Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for symptom in report.symptoms.all %}
+                                    <tr>
+                                        <td>{{ symptom.name }}</td>
+                                        <td>{{ symptom.body_part }}</td>
+                                        <td>
+                                            {% with severity=symptom.reportsymptom_set.get.severity %}
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar {% if severity < 3 %}bg-success{% elif severity < 7 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ severity|floatformat:0 }}0%;" 
+                                                         aria-valuenow="{{ severity }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="10">
+                                                        {{ severity }}/10
+                                                    </div>
+                                                </div>
+                                            {% endwith %}
+                                        </td>
+                                        <td>
+                                            {% with duration=symptom.reportsymptom_set.get.duration %}
+                                                {{ duration }}
+                                            {% endwith %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>No symptoms have been recorded for this report.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Predicted Diseases Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="fas fa-heartbeat me-2"></i>Predicted Health Conditions
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if report.diseases.all %}
+                    <div class="row">
+                        {% for disease in report.diseases.all %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100 {% if forloop.counter == 1 %}border-primary{% endif %}">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">{{ disease.name }}</h5>
+                                        {% if forloop.counter == 1 %}
+                                            <span class="badge bg-primary">Primary Match</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-body">
+                                        <p>{{ disease.description }}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-muted">Confidence:</span>
+                                            <div class="progress" style="width: 70%; height: 20px;">
+                                                {% with confidence=disease.reportdisease_set.get.confidence %}
+                                                    <div class="progress-bar {% if confidence < 30 %}bg-danger{% elif confidence < 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ confidence }}%;" 
+                                                         aria-valuenow="{{ confidence }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100">
+                                                        {{ confidence }}%
+                                                    </div>
+                                                {% endwith %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>No health conditions have been predicted for this report.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recommended Remedies Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="fas fa-mortar-pestle me-2"></i>Recommended Natural Remedies
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if report.remedies.all %}
+                    <div class="row">
+                        {% for remedy in report.remedies.all %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">{{ remedy.name }}</h5>
+                                        <span class="badge bg-{% if remedy.type == 'HERB' %}success{% elif remedy.type == 'YOGA' %}info{% elif remedy.type == 'DIET' %}warning{% else %}secondary{% endif %}">
+                                            {{ remedy.get_type_display }}
+                                        </span>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>{{ remedy.description }}</p>
+                                        {% if remedy.instructions %}
+                                            <h6>Instructions:</h6>
+                                            <p>{{ remedy.instructions }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>No remedies have been recommended for this report.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Disclaimer -->
+        <div class="alert alert-warning mb-4">
+            <h5><i class="fas fa-exclamation-triangle me-2"></i>Disclaimer</h5>
+            <p>This health report is generated based on the symptoms provided and is intended for informational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.</p>
+        </div>
+        
+        <!-- Navigation Buttons -->
+        <div class="d-flex justify-content-between mb-4">
+            <a href="{% url 'health_predictor:patient_detail' pk=report.patient.id %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Patient
+            </a>
+            <a href="{% url 'health_predictor:report_update' pk=report.id %}" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i>Edit Report
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

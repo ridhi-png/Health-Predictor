@@ -1,0 +1,183 @@
+{% extends 'health_predictor/base.html' %}
+
+{% block title %}Health Prediction Results{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i class="fas fa-clipboard-check me-2"></i>Health Prediction Results
+                    {% if patient %}
+                        <span class="text-muted fs-5">for {{ patient.name }}</span>
+                    {% endif %}
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Disclaimer:</strong> These results are based on the symptoms you provided and are not a substitute for professional medical advice. Please consult with a healthcare provider for proper diagnosis and treatment.
+                </div>
+                
+                <!-- Summary Section -->
+                <div class="mb-4">
+                    <h4>Summary</h4>
+                    <p>Based on your symptoms, we've identified potential health conditions and natural remedies that may help.</p>
+                </div>
+                
+                <!-- Symptoms Recap -->
+                <div class="mb-4">
+                    <h5>Your Symptoms</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Symptom</th>
+                                    <th>Severity</th>
+                                    <th>Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for symptom in symptoms %}
+                                    <tr>
+                                        <td>{{ symptom.name }}</td>
+                                        <td>
+                                            {% with severity=symptom_data|get_item:symptom.id|get_item:'severity' %}
+                                                <div class="progress">
+                                                    <div class="progress-bar bg-{{ severity|severity_color }}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ severity|multiply:10 }}%" 
+                                                         aria-valuenow="{{ severity }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="10">
+                                                        {{ severity }}/10
+                                                    </div>
+                                                </div>
+                                            {% endwith %}
+                                        </td>
+                                        <td>{{ symptom_data|get_item:symptom.id|get_item:'duration'|title }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Predicted Conditions -->
+                <div class="mb-4">
+                    <h5>Potential Health Conditions</h5>
+                    {% if predicted_diseases %}
+                        <div class="row">
+                            {% for disease in predicted_diseases %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">{{ disease.name }}</h6>
+                                            <span class="badge bg-{{ disease.severity_level|severity_color }} rounded-pill">
+                                                {{ disease.severity_level }}/10
+                                            </span>
+                                        </div>
+                                        <div class="card-body">
+                                            <p>{{ disease.description }}</p>
+                                            {% if disease.common_age_group %}
+                                                <p><strong>Common Age Group:</strong> {{ disease.common_age_group }}</p>
+                                            {% endif %}
+                                            <p><strong>Common Symptoms:</strong></p>
+                                            <ul class="list-unstyled">
+                                                {% for symptom in disease.symptoms.all|slice:":5" %}
+                                                    <li>
+                                                        <i class="fas fa-check-circle text-success me-2"></i>{{ symptom.name }}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>No specific health conditions could be predicted based on your symptoms.
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Recommended Remedies -->
+                <div class="mb-4">
+                    <h5>Recommended Natural Remedies & Practices</h5>
+                    {% if recommended_remedies %}
+                        <div class="row">
+                            {% for remedy in recommended_remedies %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">{{ remedy.name }}</h6>
+                                            <span class="badge bg-primary rounded-pill">
+                                                {{ remedy.get_remedy_type_display }}
+                                            </span>
+                                        </div>
+                                        <div class="card-body">
+                                            <p>{{ remedy.description }}</p>
+                                            <h6>Instructions:</h6>
+                                            <p>{{ remedy.instructions }}</p>
+                                            {% if remedy.contraindications %}
+                                                <div class="alert alert-warning mt-2 mb-0 py-2">
+                                                    <strong>Caution:</strong> {{ remedy.contraindications }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="card-footer bg-transparent">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span>Effectiveness:</span>
+                                                <div>
+                                                    {% for i in "12345"|make_list %}
+                                                        {% if forloop.counter <= remedy.effectiveness_rating %}
+                                                            <i class="fas fa-star text-warning"></i>
+                                                        {% else %}
+                                                            <i class="far fa-star text-muted"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>No specific remedies could be recommended based on your symptoms.
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Actions -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% if patient %}{% url 'health_predictor:symptom_severity' patient_id=patient.id %}{% else %}{% url 'health_predictor:symptom_severity' %}{% endif %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Severity Assessment
+                    </a>
+                    
+                    <div>
+                        {% if report %}
+                            <a href="{% url 'health_predictor:report_detail' pk=report.pk %}" class="btn btn-success me-2">
+                                <i class="fas fa-file-medical me-2"></i>View Full Report
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'health_predictor:home' %}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>Return to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add any JavaScript needed for the results page
+</script>
+{% endblock %}
